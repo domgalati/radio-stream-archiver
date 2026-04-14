@@ -156,6 +156,16 @@ Each entry in `shows:` supports:
 - **`end_date`** (optional): `YYYY-MM-DD` (exclusive upper bound; no starts on/after this date)
 - **`stream_url`** (optional): accepted for future use but **not implemented** yet (global `stream_url` is used)
 
+```
+shows:
+- title: Disk Rot Radio
+  day: Tuesday
+  start: '14:00:00'
+  end: '16:00:00'
+  format: 320mp3
+  enabled: true
+```
+
 ### Notes when editing via the web UI
 
 - **Saving from the UI rewrites `schedule.yaml`** using PyYAML.

@@ -7,3 +7,5 @@
 - Show names included in filenames. 
 
 - Should probably stop vendoring js stuff now that this is a public project.
+
+- Dockerfile and a docker-compose.yml
