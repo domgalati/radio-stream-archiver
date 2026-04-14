@@ -4,3 +4,6 @@
 
 - Allow users to remove shows by clicking an [x] in the entry on the grid in the scheduler. alternatively, clicking empty space on a given day prompts an "Add" window with that date autoselected in the dropdown. In the future, we will add lines for precice time clicking like in outlook,
 
+- Show names included in filenames. 
+
+- Should probably stop vendoring js stuff now that this is a public project.
