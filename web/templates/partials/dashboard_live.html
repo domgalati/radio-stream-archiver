@@ -1,0 +1,140 @@
+<div class="dashboard-live-root">
+  <div class="dash-ops-strip" role="region" aria-label="Service overview">
+    <div class="dash-ops-metric{% if live.main_loop_ok %} dash-ops-metric--ok{% else %} dash-ops-metric--bad{% endif %}">
+      <span class="dash-ops-metric-label">Recorder</span>
+      <span class="dash-ops-metric-value">{% if live.main_loop_ok %}Up{% else %}Down{% endif %}</span>
+      {% if live.main_loop_ok %}<span class="dash-ops-metric-sub">Uptime {{ live.uptime_display }}</span>{% else %}<span class="dash-ops-metric-sub">Start main.py</span>{% endif %}
+    </div>
+    <div class="dash-ops-metric dash-ops-metric--neutral">
+      <span class="dash-ops-metric-label">Status tick</span>
+      <span class="dash-ops-metric-value">{{ live.tick_age_display }}</span>
+      <span class="dash-ops-metric-sub">Last write {{ live.tick_display }}</span>
+    </div>
+    <div class="dash-ops-metric{% if live.stream_ok %} dash-ops-metric--ok{% else %} dash-ops-metric--bad{% endif %}">
+      <span class="dash-ops-metric-label">Stream</span>
+      <span class="dash-ops-metric-value">{% if live.stream_ok %}OK{% else %}Fail{% endif %}</span>
+      <span class="dash-ops-metric-sub">HEAD check</span>
+    </div>
+    <div class="dash-ops-metric dash-ops-metric--neutral">
+      <span class="dash-ops-metric-label">Shows</span>
+      <span class="dash-ops-metric-value">{{ live.shows_enabled }} / {{ live.shows_total }}</span>
+      <span class="dash-ops-metric-sub">enabled / total</span>
+    </div>
+    <div class="dash-ops-metric dash-ops-metric--neutral dash-ops-metric--disk">
+      <span class="dash-ops-metric-label">Disk</span>
+      <span class="dash-ops-metric-value dash-ops-disk-fraction">{{ live.disk_fraction }}</span>
+      <div class="dash-ops-disk-bar" role="img" aria-label="Disk space used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ live.disk_used_pct|int }}">
+        <div class="dash-ops-disk-bar-fill" style="width: {{ live.disk_used_pct }}%"></div>
+      </div>
+      <span class="dash-ops-metric-sub">{{ live.disk_free_gb }} GB free</span>
+    </div>
+  </div>
+
+  <sl-card class="dash-card dash-card--header-only dash-card--stream">
+    <div slot="header" class="dash-stream-header">
+      <span class="dash-stream-label">Stream</span>
+      {% if live.stream_url %}
+      <code class="stream-url-header" title="{{ live.stream_url }}">{{ live.stream_url }}</code>
+      {% else %}
+      <span class="muted stream-url-header stream-url-header--empty">No stream URL</span>
+      {% endif %}
+      {% if live.stream_ok %}
+      <span class="live-pulse-wrap stream-status-pulse" title="Stream reachable">
+        <span class="live-pulse-dot" aria-hidden="true"></span>
+      </span>
+      {% else %}
+      <span class="stream-down-indicator" title="Stream unreachable"></span>
+      {% endif %}
+    </div>
+  </sl-card>
+
+  <sl-card class="dash-card">
+    <div slot="header" class="dash-card-header">
+      <span>Recorder Service (main.py)</span>
+      <span class="main-loop-light-wrap" title="{% if live.main_loop_ok %}Status file is updating{% else %}Status file is stale or missing{% endif %}">
+        <span class="status-dot{% if live.main_loop_ok %} status-dot--ok{% else %} status-dot--bad{% endif %}" aria-hidden="true"></span>
+        {% if live.main_loop_ok %}
+        <sl-badge variant="success" pill>Running</sl-badge>
+        {% else %}
+        <sl-badge variant="warning" pill>Not running</sl-badge>
+        {% endif %}
+      </span>
+    </div>
+    {% if live.main_loop_ok %}
+    <p class="muted small recorder-sub">
+      {% if live.recordings|length > 0 %}
+      Main loop is active and encoding is in progress.
+      {% else %}
+      Main loop is active; scheduler idle (no active encode right now).
+      {% endif %}
+    </p>
+    {% else %}
+    <p class="tick-warning recorder-warning">The recorder process does not appear to be running, or <code>status.json</code> is not updating. Scheduled captures will not run until you start <code>main.py</code> on this machine.</p>
+    <p class="recorder-actions">
+      <button type="button" class="copy-start-cmd-btn" data-cmd="{{ live.start_command }}">Copy start command</button>
+      <span class="muted small copy-start-hint">Run it in a terminal from the <code>radioarchive</code> app folder (same directory as <code>main.py</code>).</span>
+    </p>
+    {% endif %}
+  </sl-card>
+
+  <sl-card class="dash-card">
+    <div slot="header" class="dash-card-header">
+      <span>Recording status</span>
+      {% if live.recordings|length > 0 %}
+      <span class="rec-pulse-wrap" title="Recording in progress" aria-label="Recording in progress">
+        <span class="rec-pulse-dot" aria-hidden="true"></span>
+      </span>
+      {% endif %}
+    </div>
+    <div id="recording-panel">
+      {% if live.recordings|length > 0 %}
+        {% for rec in live.recordings %}
+        <div class="recording-block">
+          <h3 class="recording-title">{{ rec.title }}</h3>
+          <sl-progress-bar value="{{ rec.pct }}" class="recording-progress"></sl-progress-bar>
+          <p class="recording-meta">
+            <span class="elapsed">Elapsed: <span class="elapsed-val">{{ rec.elapsed_hms }}</span></span>
+            <span class="remaining">Remaining: <span class="remaining-val">{{ rec.remaining_hms }}</span></span>
+            {% if rec.reconnect_count > 0 %}
+            <span class="reconnects">Reconnects: {{ rec.reconnect_count }}</span>
+            {% endif %}
+          </p>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="recording-idle-row">
+          <span class="rec-standby-square rec-standby-square--inline" title="Not recording" aria-hidden="true"></span>
+          <p class="muted recording-idle-text">Nothing recording right now.</p>
+        </div>
+      {% endif %}
+    </div>
+  </sl-card>
+
+  <sl-card class="dash-card" id="next-scheduled-section">
+    <div slot="header">Next scheduled</div>
+    <div id="next-scheduled-wrap">
+      <table class="data-table data-table-dense next-scheduled-table">
+        <thead>
+          <tr>
+            <th>Show</th>
+            <th>Starts</th>
+            <th>Starts in</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if live.next and live.next.starts_at %}
+          <tr id="next-scheduled-row" data-starts-at="{{ live.next.starts_at }}">
+            <td class="next-scheduled-show"><strong class="next-title">{{ live.next.title }}</strong></td>
+            <td><time class="next-time" datetime="{{ live.next.starts_at }}">{{ live.next.starts_at }}</time></td>
+            <td class="next-scheduled-countdown"><span id="countdown">{{ live.next.countdown_hms }}</span></td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="muted next-empty">No upcoming shows.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </sl-card>
+</div>

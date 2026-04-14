@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Radio Archive{% endblock %}
+{% block body_class %}page-dashboard{% endblock %}
+{% block content %}
+<h1 class="page-title">Dashboard</h1>
+
+<div
+  id="dashboard-root"
+  class="page-dashboard-inner"
+  data-page="dashboard"
+>
+  <div
+    id="dashboard-live"
+    hx-get="{{ url_for('partial_dashboard_live') }}"
+    hx-trigger="load, every {{ dashboard_poll_seconds }}s"
+    hx-swap="innerHTML"
+  >
+    {% include "partials/dashboard_live.html" %}
+  </div>
+</div>
+{% endblock %}

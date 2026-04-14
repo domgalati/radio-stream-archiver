@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Logs — Radio Archive{% endblock %}
+{% block body_class %}page-logs{% endblock %}
+{% block content %}
+<h1 class="page-title">Logs</h1>
+<div id="logs-root" class="page-stack" data-page="logs">
+  <sl-card class="logs-card">
+    <div slot="header" class="dash-card-header">
+      <span>radioarchive.log</span>
+      <sl-badge variant="neutral" pill>Last 200 lines · every {{ logs_poll_seconds }}s</sl-badge>
+    </div>
+    <div
+      id="logs-fragment"
+      hx-get="{{ url_for('partial_logs_tail') }}"
+      hx-trigger="load, every {{ logs_poll_seconds }}s"
+      hx-swap="innerHTML"
+    >
+      {% include "partials/logs_tail.html" %}
+    </div>
+  </sl-card>
+</div>
+{% endblock %}

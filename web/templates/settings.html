@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Settings — Radio Archive{% endblock %}
+{% block body_class %}page-settings{% endblock %}
+{% block content %}
+<h1 class="page-title">Settings</h1>
+
+<div class="page-stack">
+<sl-card class="dash-card">
+  <div slot="header">Global &amp; web</div>
+  <form method="post" action="{{ url_for('settings_save') }}" class="settings-form">
+    <sl-input name="stream_url" label="Stream URL" value="{{ cfg.stream_url }}" required></sl-input>
+    <sl-input name="output_root" label="Output root" value="{{ cfg.output_root }}" required></sl-input>
+    <sl-input
+      name="ffmpeg_path"
+      label="ffmpeg path"
+      value="{{ cfg.ffmpeg_path }}"
+      title="{{ cfg.ffmpeg_path }}"
+      class="settings-ffmpeg-input"
+      required
+    ></sl-input>
+    <p class="muted small settings-ffmpeg-resolved">
+      Resolved: <code class="ffmpeg-resolved-path">{{ ffmpeg_resolved }}</code>
+    </p>
+    <sl-input
+      type="number"
+      name="stream_preroll_seconds"
+      label="Stream preroll (seconds)"
+      value="{{ cfg.stream_preroll_seconds }}"
+      min="0"
+      max="600"
+      required
+    ></sl-input>
+    <p class="muted small">
+      Start ffmpeg this many seconds <strong>before</strong> each show’s scheduled start so connect, probe, and encode time
+      do not eat the beginning of the broadcast. Stopping still happens at the scheduled <strong>end</strong> time.
+      Back-to-back shows may overlap briefly (two ffmpeg processes); that is normal.
+    </p>
+    <sl-input name="web_username" label="Web username" value="{{ cfg.web.username }}" autocomplete="username" required></sl-input>
+    <sl-input type="password" name="web_password" label="Web password" value="{{ cfg.web.password }}" autocomplete="new-password" password-toggle required></sl-input>
+    <sl-input type="number" name="web_port" label="Web port" value="{{ cfg.web.port }}" min="1" max="65535" required></sl-input>
+    <p class="muted small">Session secret stays in <code>schedule.yaml</code> under <code>web.secret_key</code> and is not edited here.</p>
+    <sl-button type="submit" variant="primary">Save</sl-button>
+  </form>
+</sl-card>
+
+<sl-card class="dash-card">
+  <div slot="header">Measure stream preroll</div>
+  <p class="muted small">
+    Records one minute from the <strong>next</strong> round clock minute using your stream URL and the first enabled show’s format
+    (or 192mp3 if none). It compares wall-clock capture time to the file duration and suggests a preroll value (requires
+    <code>ffprobe</code> next to ffmpeg or on PATH).
+  </p>
+  <p class="muted small settings-ffmpeg-resolved">
+    ffprobe resolved: <code>{{ ffprobe_resolved }}</code>
+  </p>
+  <form method="post" action="{{ url_for('settings_measure_stream_preroll') }}" class="settings-measure-form">
+    <sl-button type="submit" variant="default">Run measurement (~2 min)</sl-button>
+  </form>
+  <div
+    id="preroll-measure-panel"
+    class="preroll-measure-panel"
+    data-status="{{ preroll_measure.status | e }}"
+    data-api="{{ url_for('api_stream_preroll_measure') }}"
+  >
+    <p class="preroll-measure-status"><strong>Status:</strong> <span id="preroll-measure-status">{{ preroll_measure.status }}</span></p>
+    <p id="preroll-measure-message" class="muted small">{{ preroll_measure.message or "—" }}</p>
+    <p id="preroll-measure-suggested" class="small{% if preroll_measure.suggested_stream_preroll_seconds is not none %} preroll-measure-suggested{% endif %}">
+      {% if preroll_measure.suggested_stream_preroll_seconds is not none %}
+        Suggested stream preroll: <strong>{{ preroll_measure.suggested_stream_preroll_seconds }}</strong> seconds
+        (measured duration ≈ {{ preroll_measure.measured_duration_seconds }}s). Enter above and click Save.
+      {% else %}
+        {% if preroll_measure.measured_duration_seconds is not none %}
+          Measured duration: {{ preroll_measure.measured_duration_seconds }}s
+        {% endif %}
+      {% endif %}
+    </p>
+  </div>
+</sl-card>
+</div>
+
+<script>
+(function () {
+  var panel = document.getElementById("preroll-measure-panel");
+  if (!panel) return;
+  var api = panel.getAttribute("data-api");
+  var statusEl = document.getElementById("preroll-measure-status");
+  var msgEl = document.getElementById("preroll-measure-message");
+  var sugEl = document.getElementById("preroll-measure-suggested");
+
+  function activePoll(s) {
+    return s === "waiting" || s === "recording" || s === "analyzing";
+  }
+
+  function render(d) {
+    if (statusEl) statusEl.textContent = d.status || "—";
+    if (msgEl) msgEl.textContent = d.message || "—";
+    if (sugEl) {
+      if (d.suggested_stream_preroll_seconds != null) {
+        sugEl.textContent =
+          "Suggested stream preroll: " +
+          d.suggested_stream_preroll_seconds +
+          " seconds (measured duration ≈ " +
+          d.measured_duration_seconds +
+          "s). Enter above and click Save.";
+        sugEl.classList.add("preroll-measure-suggested");
+      } else if (d.measured_duration_seconds != null) {
+        sugEl.textContent = "Measured duration: " + d.measured_duration_seconds + "s";
+      } else {
+        sugEl.textContent = "";
+        sugEl.classList.remove("preroll-measure-suggested");
+      }
+    }
+  }
+
+  function poll() {
+    fetch(api, { credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        render(d);
+        if (activePoll(d.status)) setTimeout(poll, 1500);
+      })
+      .catch(function () {
+        if (msgEl) msgEl.textContent = "Could not load measurement status.";
+      });
+  }
+
+  var initial = panel.getAttribute("data-status") || "idle";
+  if (activePoll(initial)) poll();
+})();
+</script>
+{% endblock %}

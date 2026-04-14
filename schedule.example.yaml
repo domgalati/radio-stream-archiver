@@ -1,0 +1,17 @@
+stream_url: "http://example.com:8000/stream.aac"
+output_root: "recordings"
+ffmpeg_path: "ffmpeg"
+
+# Optional: start ffmpeg this many seconds early to avoid clipping the beginning.
+stream_preroll_seconds: 0
+
+# Required only if you run the management UI (`python web/app.py`)
+web:
+  username: "admin"
+  password: "change-me"
+  port: 8080
+  # Generate a long random string before exposing the UI on a network.
+  secret_key: "replace-this-with-a-random-string"
+
+shows: []
+

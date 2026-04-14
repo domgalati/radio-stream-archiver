@@ -1,0 +1,8 @@
+{
+  "status": "done",
+  "target_start": "2026-04-14T00:31:00",
+  "message": "Measured container duration \u2248 54.57s for a 60s wall-clock capture. Suggested stream preroll: 5s.",
+  "measured_duration_seconds": 54.573,
+  "suggested_stream_preroll_seconds": 5,
+  "updated_at": "2026-04-14T00:32:01"
+}

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+{# Vendored: Shoelace 2.15.1, HTMX 1.9.12, Alpine 3.14.3 — see static/vendor/ #}
+<html lang="en" class="sl-theme-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Radio Archive{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/shoelace/themes/dark.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="app-body app-dark {% block body_class %}{% endblock %}">
+  {% if session.user %}
+  <div class="app-shell" x-data="{ sidebarOpen: true }">
+    <aside class="app-sidebar" :class="{ 'is-collapsed': !sidebarOpen }">
+      <div class="sidebar-brand">
+        <a href="{{ url_for('dashboard') }}" class="sidebar-brand-link">KOBV 103.3 FM Radio Archiver</a>
+        <sl-icon-button
+          class="sidebar-toggle"
+          name="list"
+          label="Toggle sidebar"
+          @click="sidebarOpen = !sidebarOpen"
+        ></sl-icon-button>
+      </div>
+      <nav class="sidebar-nav" aria-label="Main">
+        <a href="{{ url_for('dashboard') }}" class="sidebar-link{% if request.endpoint == 'dashboard' %} is-active{% endif %}">
+          <sl-icon name="speedometer2" class="sidebar-link-icon"></sl-icon>
+          <span class="sidebar-link-text">Dashboard</span>
+        </a>
+        <a href="{{ url_for('schedule_page') }}" class="sidebar-link{% if request.endpoint == 'schedule_page' %} is-active{% endif %}">
+          <sl-icon name="calendar3" class="sidebar-link-icon"></sl-icon>
+          <span class="sidebar-link-text">Schedule</span>
+        </a>
+        <a href="{{ url_for('history_page') }}" class="sidebar-link{% if request.endpoint == 'history_page' %} is-active{% endif %}">
+          <sl-icon name="music-note-beamed" class="sidebar-link-icon"></sl-icon>
+          <span class="sidebar-link-text">History</span>
+        </a>
+        <a href="{{ url_for('logs_page') }}" class="sidebar-link{% if request.endpoint == 'logs_page' %} is-active{% endif %}">
+          <sl-icon name="journal-text" class="sidebar-link-icon"></sl-icon>
+          <span class="sidebar-link-text">Logs</span>
+        </a>
+        <a href="{{ url_for('settings_page') }}" class="sidebar-link{% if request.endpoint == 'settings_page' %} is-active{% endif %}">
+          <sl-icon name="gear" class="sidebar-link-icon"></sl-icon>
+          <span class="sidebar-link-text">Settings</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <form action="{{ url_for('logout') }}" method="post" class="sidebar-logout-form">
+          <sl-button type="submit" variant="text" size="small" class="sidebar-logout-btn">
+            <sl-icon slot="prefix" name="box-arrow-right"></sl-icon>
+            Logout
+          </sl-button>
+        </form>
+      </div>
+    </aside>
+    <div class="app-main">
+      <div class="app-global-clock" data-global-clock aria-live="polite">
+        <span class="app-global-clock-tz"></span>
+        <time class="app-global-clock-time" datetime=""></time>
+      </div>
+      <main class="main-content">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+          <div class="flash-stack" role="status">
+            {% for m in messages %}
+            <sl-alert variant="neutral" open closable class="flash-alert">{{ m }}</sl-alert>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+  {% endif %}
+
+  <script
+    type="module"
+    src="{{ url_for('static', filename='vendor/shoelace/shoelace-autoloader.js') }}"
+    data-shoelace="{{ url_for('static', filename='vendor/shoelace/') }}"
+  ></script>
+  <script src="{{ url_for('static', filename='vendor/htmx.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='vendor/alpine.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>

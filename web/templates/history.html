@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}History — Radio Archive{% endblock %}
+{% block body_class %}page-history{% endblock %}
+{% block content %}
+<h1 class="page-title">History</h1>
+
+<div class="page-stack">
+<sl-card class="dash-card">
+  <div slot="header">In Storage:</div>
+  <div class="table-wrap">
+    <table class="data-table data-table-dense">
+      <thead>
+        <tr>
+          <th>Show</th>
+          <th>Episodes</th>
+          <th>Total size</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in summary %}
+        <tr>
+          <td>{{ s.show_title }}</td>
+          <td>{{ s.count }}</td>
+          <td>{{ "%.2f"|format(s.total_size / (1024 ** 2)) }} MB</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="muted">No recordings found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</sl-card>
+
+<sl-card class="dash-card">
+  <div slot="header">All files</div>
+  <div class="table-wrap table-wide">
+    <table class="data-table data-table-dense">
+      <thead>
+        <tr>
+          <th>Show</th>
+          <th>Recorded</th>
+          <th>Duration</th>
+          <th>Size</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.show_title }}</td>
+          <td>{{ r.recorded_label }}</td>
+          <td>
+            {% if r.duration_sec is not none %}
+              {% set sec = (r.duration_sec | round(0)) | int %}
+              {{ (sec // 3600) }}:{{ '%02d'|format((sec // 60) % 60) }}:{{ '%02d'|format(sec % 60) }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td>{{ "%.2f"|format(r.size / (1024 ** 2)) }} MB</td>
+          <td class="actions history-actions">
+            <audio controls preload="none" src="{{ url_for('serve_file', rel_posix=r.rel_posix) }}"></audio>
+            <sl-button size="small" href="{{ url_for('serve_file', rel_posix=r.rel_posix, dl='1') }}" download="">Download</sl-button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="muted">No audio files under output root.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</sl-card>
+</div>
+{% endblock %}

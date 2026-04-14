@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+{# Vendored: Shoelace 2.15.1 — see static/vendor/ #}
+<html lang="en" class="sl-theme-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login — Radio Archive</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/shoelace/themes/dark.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="app-body app-dark page-login">
+  <div class="app-global-clock app-global-clock--login" data-global-clock aria-live="polite">
+    <span class="app-global-clock-tz"></span>
+    <time class="app-global-clock-time" datetime=""></time>
+  </div>
+  <main class="login-wrap">
+    <h1 class="login-title">Radio Archive</h1>
+    <p class="login-sub">Sign in to manage recordings</p>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+      <div class="flash-stack" role="alert">
+        {% for m in messages %}
+        <sl-alert variant="danger" open class="flash-alert">{{ m }}</sl-alert>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
+    <sl-card class="login-card">
+      <form class="login-form" method="post" action="{{ url_for('login') }}">
+        {% if request.args.get('next') %}
+        <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+        {% endif %}
+        <sl-input
+          label="Username"
+          name="username"
+          autocomplete="username"
+          required
+          autofocus
+        ></sl-input>
+        <sl-input
+          type="password"
+          label="Password"
+          name="password"
+          autocomplete="current-password"
+          password-toggle
+          required
+        ></sl-input>
+        <sl-button type="submit" variant="primary" class="login-submit">Sign in</sl-button>
+      </form>
+    </sl-card>
+  </main>
+  <script
+    type="module"
+    src="{{ url_for('static', filename='vendor/shoelace/shoelace-autoloader.js') }}"
+    data-shoelace="{{ url_for('static', filename='vendor/shoelace/') }}"
+  ></script>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>

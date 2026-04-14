@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Schedule — Radio Archive{% endblock %}
+{% block body_class %}page-schedule{% endblock %}
+{% block content %}
+<div id="schedule-page" data-page="schedule" class="schedule-wrap page-stack">
+  <h1 class="page-title">Schedule</h1>
+
+  <sl-card class="schedule-grid-card dash-card">
+    <div slot="header">Weekly grid</div>
+    <div class="week-grid">
+      {% for day in range(7) %}
+      <div class="week-col week-col--{{ weekday_names[day]|lower }}">
+        <h3 class="week-col-head">{{ weekday_names[day] }}</h3>
+        <div class="week-col-body">
+          {% for show in shows_by_day[day] %}
+          <div class="show-block {% if not show.enabled %}show-disabled{% endif %}">
+            <span class="show-block-title">{{ show.title }}</span>
+            <span class="show-block-time">{{ show.start.strftime('%H:%M') }}–{{ show.end.strftime('%H:%M') }}</span>
+            <span class="format-badge">{{ show.format }}</span>
+            <span class="state-badge">{% if show.enabled %}On{% else %}Off{% endif %}</span>
+          </div>
+          {% else %}
+          <p class="muted week-empty">—</p>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </sl-card>
+
+  <sl-card class="dash-card">
+    <div slot="header" class="dash-card-header">
+      <span>Scheduled Recordings</span>
+      <sl-button type="button" variant="primary" size="small" id="btn-add-show">+</sl-button>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table data-table-dense">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Day</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Format</th>
+            <th>Enabled</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for show in shows_list %}
+          <tr>
+            <td>{{ show.title }}</td>
+            <td>{{ weekday_names[show.day] }}</td>
+            <td>{{ show.start.strftime('%H:%M:%S') }}</td>
+            <td>{{ show.end.strftime('%H:%M:%S') }}</td>
+            <td><sl-badge variant="neutral" pill>{{ show.format }}</sl-badge></td>
+            <td>{% if show.enabled %}<sl-badge variant="success" pill>Yes</sl-badge>{% else %}<sl-badge variant="neutral" pill>No</sl-badge>{% endif %}</td>
+            <td class="actions">
+              <sl-button
+                type="button"
+                size="small"
+                class="btn-edit-show"
+                data-index="{{ loop.index0 }}"
+                data-title="{{ show.title|e }}"
+                data-day="{{ weekday_names[show.day] }}"
+                data-start="{{ show.start.strftime('%H:%M') }}"
+                data-end="{{ show.end.strftime('%H:%M') }}"
+                data-format="{{ show.format }}"
+                data-enabled="{{ '1' if show.enabled else '0' }}"
+                data-end-date="{{ show.end_date.isoformat() if show.end_date else '' }}"
+              >Edit</sl-button>
+              <form method="post" action="{{ url_for('schedule_page') }}" class="inline-form" onsubmit="return confirm('Delete this show?');">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="index" value="{{ loop.index0 }}">
+                <sl-button type="submit" size="small" variant="danger">Delete</sl-button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </sl-card>
+
+  <sl-card class="dash-card schedule-yaml-card">
+    <sl-details class="schedule-yaml-details">
+      <div slot="summary" class="schedule-yaml-summary">
+        <span class="schedule-yaml-summary-inner">
+          <span class="schedule-yaml-rule" aria-hidden="true"></span>
+          <span class="schedule-yaml-summary-text">Show raw YAML</span>
+          <span class="schedule-yaml-rule" aria-hidden="true"></span>
+        </span>
+      </div>
+      <pre class="raw-yaml schedule-yaml-pre" id="shows-yaml-pre">{{ shows_yaml }}</pre>
+    </sl-details>
+  </sl-card>
+</div>
+
+<sl-dialog id="schedule-dialog" class="schedule-dialog" label="Add show">
+  <form method="post" action="{{ url_for('schedule_page') }}" id="schedule-form" class="schedule-dialog-form">
+    <input type="hidden" name="action" id="form-action" value="add">
+    <input type="hidden" name="index" id="form-index" value="-1">
+    <sl-input id="f-title" name="title" label="Title" required></sl-input>
+    <sl-select id="f-day" name="day" label="Day" required value="Monday">
+      {% for name in weekday_names %}
+      <sl-option value="{{ name }}">{{ name }}</sl-option>
+      {% endfor %}
+    </sl-select>
+    <sl-input type="time" id="f-start" name="start" label="Start" step="1" required></sl-input>
+    <sl-input type="time" id="f-end" name="end" label="End" step="1" required></sl-input>
+    <sl-select id="f-format" name="format" label="Format" required value="192mp3">
+      <sl-option value="192mp3">192mp3</sl-option>
+      <sl-option value="320mp3">320mp3</sl-option>
+      <sl-option value="wav">wav</sl-option>
+    </sl-select>
+    <sl-checkbox id="f-enabled" name="enabled" value="on" checked>Enabled</sl-checkbox>
+    <sl-input type="date" id="f-end-date" name="end_date" label="End date (optional)"></sl-input>
+  </form>
+  <sl-button slot="footer" variant="neutral" type="button" data-close-modal>Cancel</sl-button>
+  <sl-button slot="footer" variant="primary" type="submit" form="schedule-form">Save</sl-button>
+</sl-dialog>
+{% endblock %}
