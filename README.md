@@ -1,13 +1,24 @@
-# Radio Show Archiver (`radioarchive`)
+## Radio Archive (`radioarchive`)
 
-`radioarchive` is a small Python 3.10+ application that records scheduled radio shows from a streaming URL using **ffmpeg**. It’s designed to run as a long-running background process on Windows and Linux, controlled entirely by a YAML file and logs.
+`radioarchive` is a small Python app that **records scheduled radio shows from a stream URL** using `ffmpeg`.
+
+It’s designed to be simple to operate:
+
+- **One YAML file** (`schedule.yaml`) controls the schedule and settings
+- An optional **web UI** lets you manage the schedule and browse recordings (separate process)
 
 ## Requirements
 
-- Python **3.10+**
-- `ffmpeg` installed and available on PATH (or set `ffmpeg_path` in `schedule.yaml`)
+- **Python 3.10+**
+- **ffmpeg** available on PATH (or set `ffmpeg_path` in `schedule.yaml`)
 
-## Setup
+Python dependencies:
+
+- `pyyaml`
+- `flask`
+- `mutagen` (web UI duration estimates for MP3)
+
+## Quickstart
 
 From the `radioarchive/` directory:
 
@@ -15,7 +26,7 @@ From the `radioarchive/` directory:
 python -m venv .venv
 ```
 
-Activate:
+Activate the venv:
 
 - **Windows (PowerShell)**:
 
@@ -23,29 +34,37 @@ Activate:
 .\.venv\Scripts\Activate.ps1
 ```
 
-- **Linux/macOS (bash)**:
+- **Linux/macOS (bash/zsh)**:
 
 ```bash
 source .venv/bin/activate
 ```
 
-Install Python dependency:
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
+Create your config:
+
+```bash
+cp schedule.example.yaml schedule.yaml
+```
+
+Then edit `schedule.yaml` (stream URL, output folder, shows, and optionally web UI credentials).
+
 ## Installing ffmpeg
 
 ### Windows
 
-- Option A (recommended): `winget`:
+Using `winget`:
 
 ```powershell
 winget install Gyan.FFmpeg
 ```
 
-- Option B: Download a build and set `ffmpeg_path` in `schedule.yaml` to something like `C:/ffmpeg/bin/ffmpeg.exe`.
+Or download a build and set `ffmpeg_path` in `schedule.yaml` (example: `C:/ffmpeg/bin/ffmpeg.exe`).
 
 ### Linux (Ubuntu/Debian)
 
@@ -56,84 +75,95 @@ sudo apt install -y ffmpeg
 
 ## Running
 
+### Recorder (scheduler + recording loop)
+
 From the `radioarchive/` directory:
 
 ```bash
 python main.py
 ```
 
-Logs go to:
+It writes:
 
-- stdout
-- `radioarchive.log` (rotating; 5MB max, 3 backups) next to `main.py`
+- **Logs**: stdout and `radioarchive.log` (rotating, 5MB max, 3 backups)
+- **Status**: `status.json` (updated on each scheduler tick)
+
+The recorder:
+
+- Reloads `schedule.yaml` when the file changes (no restart required)
+- Starts recording **`stream_preroll_seconds`** early (optional)
+- Restarts `ffmpeg` if it exits early (writes parts, then stitches them on stop)
 
 ### Web management UI (optional, separate process)
 
-The recorder (`main.py`) and the web UI are **two separate processes**. They coordinate only through files on disk: `schedule.yaml`, `status.json`, and `radioarchive.log`. There is no message queue, database, or socket between them.
+The web UI is a separate Flask process. It does **not** import the recorder; it reads files written by the recorder.
 
-From the `radioarchive/` directory, create your private `schedule.yaml` from the template and then add your `web` section (see below):
+To enable it, your `schedule.yaml` must include a `web:` block (username/password/port/secret_key).
 
-```bash
-copy schedule.example.yaml schedule.yaml
-```
+Run:
 
 ```bash
 python web/app.py
 ```
 
-The UI listens on `0.0.0.0` and the port from `web.port` (default `8080`). Use session login with the configured username and password. Change `web.secret_key` to a long random string before exposing the service on a network.
-
-While `main.py` is running, it writes **`status.json`** in the same directory on every scheduler tick. The loop sleeps until the next show start or end when that is soon, otherwise at most about 30 seconds so status, config reload, and ffmpeg health checks stay fresh. The UI reads that file (and never imports `main.py`). Each tick also performs a lightweight HTTP `HEAD` request to `stream_url` and records whether the stream appears reachable.
+Then open `http://localhost:<web.port>` and log in.
 
 ## Configuration (`schedule.yaml`)
 
+Start from `schedule.example.yaml`.
+
 Top-level keys:
 
-- **`stream_url`**: global stream URL (applies to all shows)
-- **`output_root`**: recordings root directory (paths are handled via `pathlib.Path`)
-- **`ffmpeg_path`**: `ffmpeg` or full path (e.g. `C:/ffmpeg/bin/ffmpeg.exe`)
-- **`stream_preroll_seconds`** (optional): integer **0–600**, default **0**. The scheduler starts ffmpeg this many seconds **before** each show’s scheduled start so network connect, probe, and encode time do not cut off the beginning of the program. The scheduled **end** time is unchanged. On the Settings page you can run **Measure stream preroll**, which records one wall-clock minute from the next round minute, reads the output duration with `ffprobe`, and suggests a value (e.g. ~6 if the file is ~54 seconds short of 60).
-- **`web`** (optional): required only if you use the web UI; see below
-- **`shows`**: list of show entries
-
-### `web` block (management UI)
-
-When present, all of the following fields are required:
-
-- **`username`** / **`password`**: single shared login for the Flask session
-- **`port`**: TCP port for the web server (integer)
-- **`secret_key`**: secret used to sign cookies (keep private; not editable from the Settings page)
+- **`stream_url`** (required): stream URL used for all recordings
+- **`output_root`** (required): directory where recordings are written (relative paths are relative to the app directory)
+- **`ffmpeg_path`** (optional): defaults to `ffmpeg`
+- **`stream_preroll_seconds`** (optional): integer \(0–600\), default `0`
+- **`shows`** (required): list of scheduled shows (can be empty)
+- **`web`** (optional): only required if you run the web UI
 
 Example:
 
 ```yaml
+stream_url: "http://example.com:8000/stream.aac"
+output_root: "recordings"
+ffmpeg_path: "ffmpeg"
+stream_preroll_seconds: 0
 web:
   username: "admin"
-  password: "changeme"
+  password: "change-me"
   port: 8080
   secret_key: "replace-this-with-a-random-string"
+shows: []
 ```
 
-The recorder ignores `web`; you can omit it if you only run `main.py`.
+### `web` block (web UI login)
 
-**Note:** Saving schedule or settings through the web UI rewrites `schedule.yaml` with PyYAML. **YAML comments in that file are not preserved** on save. Use the “View raw YAML” view or an external editor if you rely on comments.
+If you run `python web/app.py`, the `web:` block is required:
 
-Show entry fields:
+- **`username`** / **`password`**: single shared login (Flask session)
+- **`port`**: TCP port
+- **`secret_key`**: cookie signing secret (generate a long random string)
 
-- **`title`** (required): used for subdirectory name (sanitized for Windows + Linux)
-- **`day`** (required): full English day name (`Monday`, `Tuesday`, …)
-- **`start`** / **`end`** (required): `HH:MM:SS` local time (same-day only; cross-midnight windows are rejected)
-- **`format`** (required): one of:
-  - `192mp3` (MP3 192kbps CBR)
-  - `320mp3` (MP3 320kbps CBR)
-  - `wav` (PCM WAV)
-- **`enabled`** (optional): default `true`
-- **`end_date`** (optional): `YYYY-MM-DD` (exclusive upper bound; no recording will be started on or after this date)
-- **`stream_url`** (optional, per-show): accepted for future use, but **not implemented** yet
+### Show entries
+
+Each entry in `shows:` supports:
+
+- **`title`** (required): used as the show folder name (sanitized for Windows + Linux)
+- **`day`** (required): `Monday` … `Sunday`
+- **`start`** / **`end`** (required): `HH:MM:SS` local time (same-day only; cross-midnight is rejected)
+- **`format`** (required): `192mp3`, `320mp3`, or `wav`
+- **`enabled`** (optional): boolean, default `true`
+- **`end_date`** (optional): `YYYY-MM-DD` (exclusive upper bound; no starts on/after this date)
+- **`stream_url`** (optional): accepted for future use but **not implemented** yet (global `stream_url` is used)
+
+### Notes when editing via the web UI
+
+- **Saving from the UI rewrites `schedule.yaml`** using PyYAML.
+- **YAML comments are not preserved** when saving from the UI.
 
 ## Output layout
 
-Recordings are saved under:
+Final recordings are written under:
 
 `{output_root}/{show_title}/YYYY-MM-DD_HH-MM-SS.{ext}`
 
@@ -141,18 +171,25 @@ Example:
 
 `recordings/Supersonic Radio Show/2026-04-15_14-00-00.mp3`
 
-## Hot reload behavior
+During reconnects, temporary parts are written to:
 
-The scheduler wakes on every tick (at least every ~30 seconds, and sooner near show start/end times) and checks `schedule.yaml` when its file modification time changes:
+`.../YYYY-MM-DD_HH-MM-SS.{ext}.parts/part0001...`
 
-- If it changed, it reloads it without restart.
-- If the YAML is temporarily invalid while you edit, it logs the error and keeps the last known-good schedule.
+## Web UI pages
 
-## Reconnect behavior
+- **Dashboard**: live status from `status.json`
+- **Schedule**: add/edit/delete shows and view raw YAML
+- **History**: scan `output_root` for recordings; play/download files
+- **Logs**: tail of `radioarchive.log`
+- **Settings**: edit global settings and run “Measure stream preroll”
 
-If the stream drops mid-recording:
+## Security / safety notes
 
-- ffmpeg is restarted after a 5-second backoff
-- each reconnect attempt writes to a new part file
-- when the show ends, parts are stitched into a single final file
+- **Don’t commit `schedule.yaml`** if it contains real credentials or local paths. Keep it private.
+- If exposing the web UI beyond localhost, **set a strong `web.secret_key`** and choose a strong password.
 
+## Troubleshooting
+
+- **Dashboard shows recorder stopped**: ensure `python main.py` is running and `status.json` is being updated.
+- **`ffmpeg not found`**: install `ffmpeg` and ensure it’s on PATH, or set `ffmpeg_path` in `schedule.yaml`.
+- **Schedule edits not taking effect**: if `schedule.yaml` is invalid YAML, the recorder keeps the last known-good config and logs the error.
