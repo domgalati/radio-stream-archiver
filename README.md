@@ -178,7 +178,12 @@ During reconnects, temporary parts are written to:
 ## Web UI pages
 
 - **Dashboard**: live status from `status.json`
+![Dashboard](docs/screenshots/Dashboard.png)
+
 - **Schedule**: add/edit/delete shows and view raw YAML
+![Schedule](docs/screenshots/Schedule.png)
+
+
 - **History**: scan `output_root` for recordings; play/download files
 - **Logs**: tail of `radioarchive.log`
 - **Settings**: edit global settings and run “Measure stream preroll”
