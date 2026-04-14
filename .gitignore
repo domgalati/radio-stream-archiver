@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage*
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Editor/OS
+.vscode/
+.idea/
+*.swp
+*.swo
+Thumbs.db
+Desktop.ini
+
+# Logs and runtime state (generated)
+*.log
+status.json
+status.json.tmp
+
+# Local recordings/output
+recordings/
+./recordings/
+
+# Local config with credentials (keep private; use schedule.example.yaml)
+schedule.yaml
+
+# Web UI runtime artifacts
+web/data/*.json
+web/data/*.json.tmp
+web/data/*.mp3
+web/data/*.wav
+
