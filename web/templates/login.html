@@ -13,41 +13,51 @@
     <span class="app-global-clock-tz"></span>
     <time class="app-global-clock-time" datetime=""></time>
   </div>
-  <main class="login-wrap">
-    <h1 class="login-title">Radio Archive</h1>
-    <p class="login-sub">Sign in to manage recordings</p>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-      <div class="flash-stack" role="alert">
-        {% for m in messages %}
-        <sl-alert variant="danger" open class="flash-alert">{{ m }}</sl-alert>
-        {% endfor %}
+  <main class="login-shell">
+    <section class="login-hero" aria-label="Tape deck animation">
+      <div class="login-hero-frame" aria-hidden="true">
+        <img class="login-hero-gif" src="{{ url_for('static', filename='img/reel-to-reel.gif') }}" alt="">
       </div>
-      {% endif %}
-    {% endwith %}
-    <sl-card class="login-card">
-      <form class="login-form" method="post" action="{{ url_for('login') }}">
-        {% if request.args.get('next') %}
-        <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+      <div class="login-hero-copy">
+        <h1 class="login-title">KOBV Radio Archiver</h1>
+        <p class="login-sub">Sign in to manage recordings</p>
+      </div>
+    </section>
+
+    <section class="login-panel" aria-label="Sign in">
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-stack" role="alert">
+          {% for m in messages %}
+          <sl-alert variant="danger" open class="flash-alert">{{ m }}</sl-alert>
+          {% endfor %}
+        </div>
         {% endif %}
-        <sl-input
-          label="Username"
-          name="username"
-          autocomplete="username"
-          required
-          autofocus
-        ></sl-input>
-        <sl-input
-          type="password"
-          label="Password"
-          name="password"
-          autocomplete="current-password"
-          password-toggle
-          required
-        ></sl-input>
-        <sl-button type="submit" variant="primary" class="login-submit">Sign in</sl-button>
-      </form>
-    </sl-card>
+      {% endwith %}
+      <sl-card class="login-card">
+        <form class="login-form" method="post" action="{{ url_for('login') }}">
+          {% if request.args.get('next') %}
+          <input type="hidden" name="next" value="{{ request.args.get('next') }}">
+          {% endif %}
+          <sl-input
+            label="Username"
+            name="username"
+            autocomplete="username"
+            required
+            autofocus
+          ></sl-input>
+          <sl-input
+            type="password"
+            label="Password"
+            name="password"
+            autocomplete="current-password"
+            password-toggle
+            required
+          ></sl-input>
+          <sl-button type="submit" variant="primary" class="login-submit">Sign in</sl-button>
+        </form>
+      </sl-card>
+    </section>
   </main>
   <script
     type="module"

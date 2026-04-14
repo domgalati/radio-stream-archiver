@@ -91,7 +91,17 @@
         {% for rec in live.recordings %}
         <div class="recording-block">
           <h3 class="recording-title">{{ rec.title }}</h3>
-          <sl-progress-bar value="{{ rec.pct }}" class="recording-progress"></sl-progress-bar>
+          <div class="tape-progress recording-progress" role="group" aria-label="Recording progress">
+            <span class="tape-reel" aria-hidden="true">
+              <sl-icon name="gear-fill" class="tape-reel-gear"></sl-icon>
+              <sl-icon name="circle" class="tape-reel-hub"></sl-icon>
+            </span>
+            <sl-progress-bar value="{{ rec.pct }}" class="tape-progress-bar"></sl-progress-bar>
+            <span class="tape-reel" aria-hidden="true">
+              <sl-icon name="gear-fill" class="tape-reel-gear"></sl-icon>
+              <sl-icon name="circle" class="tape-reel-hub"></sl-icon>
+            </span>
+          </div>
           <p class="recording-meta">
             <span class="elapsed">Elapsed: <span class="elapsed-val">{{ rec.elapsed_hms }}</span></span>
             <span class="remaining">Remaining: <span class="remaining-val">{{ rec.remaining_hms }}</span></span>

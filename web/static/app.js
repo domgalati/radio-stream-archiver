@@ -1,6 +1,103 @@
 (function () {
   "use strict";
 
+  function isDashboardPage() {
+    var root = document.getElementById("dashboard-root");
+    if (!root) return false;
+    return (root.getAttribute("data-page") || "") === "dashboard";
+  }
+
+  function parseEverySecondsFromDashboardLive() {
+    var live = document.getElementById("dashboard-live");
+    if (!live) return 5;
+    var trig = live.getAttribute("hx-trigger") || "";
+    var m = trig.match(/every\s+(\d+(?:\.\d+)?)s/i);
+    if (!m) return 5;
+    var v = parseFloat(m[1]);
+    return isFinite(v) && v > 0 ? v : 5;
+  }
+
+  function parseHms(s) {
+    // Accepts "H:MM:SS" or "MM:SS" (and tolerates whitespace)
+    if (!s) return null;
+    var t = String(s).trim();
+    if (!t) return null;
+    var parts = t.split(":").map(function (p) {
+      return p.trim();
+    });
+    if (parts.length < 2 || parts.length > 3) return null;
+    var nums = parts.map(function (p) {
+      return parseInt(p, 10);
+    });
+    if (nums.some(function (n) { return !isFinite(n) || n < 0; })) return null;
+    if (parts.length === 2) return nums[0] * 60 + nums[1];
+    return nums[0] * 3600 + nums[1] * 60 + nums[2];
+  }
+
+  var dashboardProgressRaf = null;
+
+  function stopDashboardProgressInterpolation() {
+    if (dashboardProgressRaf != null) {
+      cancelAnimationFrame(dashboardProgressRaf);
+      dashboardProgressRaf = null;
+    }
+  }
+
+  function initDashboardProgressInterpolation() {
+    if (!isDashboardPage()) return;
+
+    stopDashboardProgressInterpolation();
+
+    var pollSeconds = parseEverySecondsFromDashboardLive();
+    var panel = document.getElementById("recording-panel");
+    if (!panel) return;
+
+    // Capture baselines for each recording block from current DOM
+    var baselines = [];
+    panel.querySelectorAll(".recording-block").forEach(function (block) {
+      var pb = block.querySelector("sl-progress-bar.tape-progress-bar");
+      if (!pb) return;
+
+      var elapsedEl = block.querySelector(".elapsed-val");
+      var remainingEl = block.querySelector(".remaining-val");
+      var elapsedSec = parseHms(elapsedEl ? elapsedEl.textContent : "");
+      var remainingSec = parseHms(remainingEl ? remainingEl.textContent : "");
+      if (elapsedSec == null || remainingSec == null) return;
+
+      var total = elapsedSec + remainingSec;
+      if (!isFinite(total) || total <= 0) return;
+
+      var baseNow = performance.now();
+      baselines.push({
+        pb: pb,
+        baseNow: baseNow,
+        baseElapsed: elapsedSec,
+        total: total,
+        pollSeconds: pollSeconds,
+      });
+    });
+
+    if (!baselines.length) return;
+
+    function frame() {
+      var now = performance.now();
+      baselines.forEach(function (b) {
+        // Smoothly advance elapsed time between server polls.
+        // Clamp drift to ~1 poll interval so it doesn’t run away if the tab is backgrounded.
+        var dt = Math.min(now - b.baseNow, b.pollSeconds * 1000);
+        var elapsed = b.baseElapsed + dt / 1000;
+        var pct = (elapsed / b.total) * 100;
+        if (!isFinite(pct)) return;
+        pct = Math.max(0, Math.min(100, pct));
+        // Shoelace progress bar reflects `.value` -> indicator width.
+        b.pb.value = pct;
+      });
+      dashboardProgressRaf = requestAnimationFrame(frame);
+    }
+
+    dashboardProgressRaf = requestAnimationFrame(frame);
+  }
+
   function initSchedulePage() {
     var page = document.getElementById("schedule-page");
     if (!page) return;
@@ -167,5 +264,11 @@
     initGlobalClock();
     initSchedulePage();
     initLogsScrollPreserve();
+    initDashboardProgressInterpolation();
+  });
+
+  // Re-init after HTMX swaps in new dashboard live HTML
+  document.body.addEventListener("htmx:afterSwap", function () {
+    initDashboardProgressInterpolation();
   });
 })();
