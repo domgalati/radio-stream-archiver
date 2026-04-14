@@ -133,7 +133,7 @@ web:
   password: "change-me"
   port: 8080
   secret_key: "replace-this-with-a-random-string"
-shows: []
+shows:
 ```
 
 ### `web` block (web UI login)
@@ -158,7 +158,7 @@ Each entry in `shows:` supports:
 
 ```yaml
 shows:
-- title: Peter Framptons Jamacian Vacation
+- title: Peter Framptons Jamaican Vacation
   day: Tuesday
   start: '14:00:00'
   end: '16:00:00'
