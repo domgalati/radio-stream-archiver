@@ -1,4 +1,4 @@
-## Radio Archive (`radioarchive`)
+# Radio Archive (`radioarchive`)
 
 `radioarchive` is a small Python app that **records scheduled radio shows from a stream URL** using `ffmpeg`.
 
