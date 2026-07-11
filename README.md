@@ -7,17 +7,13 @@ It’s designed to be simple to operate:
 - **One YAML file** (`schedule.yaml`) controls the schedule and settings
 - An optional **web UI** lets you manage the schedule and browse recordings (runs as a separate process from listener/recorder)
 
-# Optional Web UI
-
-- **History**: scan `output_root` for recordings; play/download files
-- **Logs**: tail of `radioarchive.log`
-- **Settings**: edit global settings and run “Measure stream preroll”
-
-
-- **Dashboard**: live status for recording module
+# Optional Web UI Screenshots
+### Dashboard
+live status for recording module
 ![Dashboard](docs/screenshots/Dashboard.png)
 
-- **Schedule**: add/edit/delete shows with a UI
+### Schedule
+add/edit/delete segements to record with a UI
 ![Schedule](docs/screenshots/Schedule.png)
 
 ## Requirements
